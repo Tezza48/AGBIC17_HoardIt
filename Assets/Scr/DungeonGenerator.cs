@@ -4,35 +4,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
 using HoardIt.Core;
+using HoardIt.Dungeon;
 
 namespace HoardIt
 {
-    public enum EDungeonTile
-    {
-        Undefined = -1, Air, Floor, Wall
-    }
-
-    public struct DungeonData
-    {
-        int m_Width, m_Height;
-        int[] m_Entrance, m_Exit;
-        Rect[][] m_Rooms;
-        Vector2[] m_Path;
-
-        public int Width { get { return m_Width; } set { m_Width = value; } }
-        public int Height { get { return m_Height; } set { m_Height = value; } }
-        public int[] Entrance { get { return m_Entrance; } set { m_Entrance = value; } }
-        public int[] Exit { get { return m_Exit; } set { m_Exit = value; } }
-        
-        public Rect[][] Rooms { get { return m_Rooms; } set { m_Rooms = value; } }
-        public Vector2[] Path { get { return m_Path; } set { m_Path = value; } }
-
-        public override string ToString()
-        {
-            return "Width: " + m_Width.ToString() + " Height: " + m_Height.ToString() + "Rooms: " + Rooms.Length;
-        }
-    }
-
     public class DungeonGenerator : MonoBehaviour
     {
         [Header("Dungeon Settings")]
@@ -52,7 +27,8 @@ namespace HoardIt
         public GameObject Player;
 
         [Header("Private Fields")]
-        private DungeonData m_DungeonData;
+        private RawDungeonData m_RawDungeonData;
+        private TileDungeonData m_DungeonData;
 
         private List<GameObject> m_SpawnedTiles;
         
@@ -65,67 +41,20 @@ namespace HoardIt
 
         private void GenerateDungeon()
         {
-            GenerateDungeonData(m_DungeonSize, m_MinRoomSize, m_MaxRoomSize, m_MaxRoomCount, out m_DungeonData);
-            InstantiateDungeon(m_DungeonData);
+            GenerateDungeonData(m_DungeonSize, m_MinRoomSize, m_MaxRoomSize, m_MaxRoomCount, out m_RawDungeonData);
+            InstantiateDungeon(m_RawDungeonData);
         }
 
-        private void GenerateDungeonData(int size, int minRoomSize, int maxRoomSize, int roomCount, out DungeonData dungeon)
+        private void GenerateDungeonData(int size, int minRoomSize, int maxRoomSize, int roomCount, out RawDungeonData dungeon)
         {
-            dungeon = new DungeonData
-            {
-                Width = size,
-                Height = size
-            };
+            dungeon = new RawDungeonData { Width = size, Height = size };
             
-            Rect[] rooms = GenerateRoomsData(size, minRoomSize, maxRoomSize, roomCount);
+            m_RawDungeonData.GenerateRoomsData(minRoomSize, maxRoomSize, roomCount);
 
-            GenerateAndSortClusters(rooms, ref dungeon);
+            m_RawDungeonData.GenerateAndSortClusters(m_PathNodeCount, m_MaxRoomSize);
         }
 
-        private Rect[] GenerateRoomsData(int size, int minRoomSize, int maxRoomSize, int roomCount)
-        {
-            List<Rect> rooms = new List<Rect>();
-            Rect tryRoom;
-            int trys = 0;
-            int maxTrys = 100;
-            while (trys < maxTrys && rooms.Count < roomCount)
-            {
-                Vector2 roomSize = new Vector2(Random.Range(minRoomSize, maxRoomSize) + 2, Random.Range(minRoomSize, maxRoomSize) + 2);
-
-                tryRoom = new Rect(roomSize, new Vector2(
-                    (int)Random.Range(1, size - 2 - roomSize.x),
-                    (int)Random.Range(1, size - 2 - roomSize.y)));
-
-                bool failed = false;
-
-                foreach (var room in rooms)
-                {
-                    if (tryRoom.Overlaps(room))
-                    {
-                        failed = true;
-                        break;
-                    }
-                }
-                if (failed)
-                    trys++;
-                else
-                {
-                    rooms.Add(tryRoom);
-                    trys = 0;
-                }
-            }
-#if Debug
-            foreach (var room in rooms)
-            {
-                var text = Instantiate(Prefab_TextMesh, room.center + new Vector2(-size / 2, -size / 2), Quaternion.identity);
-                text.transform.position += Vector3.back;
-                text.text = "Room" + rooms.Count;
-            }
-#endif
-            return rooms.ToArray();
-        }
-
-        private void GenerateAndSortClusters(Rect[] rooms, ref DungeonData dungeon)
+        private void GenerateAndSortClusters(Rect[] rooms, ref RawDungeonData dungeon)
         {
             dungeon.Path = new Vector2[m_PathNodeCount];
 
@@ -134,8 +63,7 @@ namespace HoardIt
             {
                 dungeon.Path[i] = new Vector2(Random.Range(m_MaxRoomSize, dungeon.Width - m_MaxRoomSize), Random.Range(m_MaxRoomSize, dungeon.Height - m_MaxRoomSize));
             }
-
-            // Spread them out away from each other: Skipping
+            
             List<Rect>[] roomNodePairing = new List<Rect>[dungeon.Path.Length];// node, room indices
             for (int i = 0; i < m_PathNodeCount; i++)
             {
@@ -188,20 +116,22 @@ namespace HoardIt
             dungeon.Exit = new int[2] { numRooms - 1, dungeon.Rooms[numRooms - 1].Length - 1 };
         }
 
-        private void InstantiateDungeon(DungeonData dungeon)
+        private void InstantiateDungeon(RawDungeonData dungeon)
         {
-            EDungeonTile[,] tiles;
+            m_DungeonData.ParseDungeonData(dungeon);
 
-            ///TODO:
-            ///Generate Pathways
-            ///Generate Walls on outline of floor tiles
+            PopulateDungeon(ref m_RawDungeonData);
 
-            ParseDungeonData(dungeon, out tiles);
-
-            InstantiateTiles(tiles, dungeon.Width, dungeon.Height);
+            InstantiateTiles(m_DungeonData.Tiles, dungeon.Width, dungeon.Height);
 
         }
 
+        private void PopulateDungeon(ref RawDungeonData dungeon)
+        {
+            Player.transform.position = dungeon.Rooms[dungeon.Entrance[0]][dungeon.Entrance[1]].center + dungeon.GetWorldOffset();
+        }
+
+        // Instantiate all tiles in a TileDungeon
         private void InstantiateTiles(EDungeonTile[,] tiles, int width, int height)
         {
             Vector2 spawnPos;
@@ -235,113 +165,6 @@ namespace HoardIt
 
                 }
             }
-        }
-
-        private void ParseDungeonData(DungeonData dungeon, out EDungeonTile[,] tiles)
-        {
-            tiles = MakeEmptyTileMap(dungeon);
-
-            // Tiles for Rooms
-            for (int i = 0; i < dungeon.Rooms.Length; i++)//itterate clusters
-            {
-                for(int j = 0; j < dungeon.Rooms[i].Length; j++)//itterate rooms
-                {
-                    var currentRoom = dungeon.Rooms[i][j];
-                    for (int y = (int)currentRoom.min.y; y < currentRoom.max.y; y++)
-                    {
-                        for (int x = (int)currentRoom.min.x; x < currentRoom.max.x; x++)
-                        {
-                            // The tiles on the edge or a room are walls
-                            if (x == currentRoom.xMin || y == currentRoom.yMin || x == currentRoom.xMax - 1 || y == currentRoom.yMax - 1)
-                            {
-                                //tiles[x, y] = EDungeonTile.Wall;
-                            }
-                            else
-                            {
-                                //if (x < 0 || x >= dungeon.Width || y < 0 || y >= dungeon.Height)
-                                //    Debug.LogError("Position " + new Vector2(x, y).ToString() + "Is out of bounds of the tile array. " + currentRoom.ToString());
-                                tiles[x, y] = EDungeonTile.Floor;
-                            }
-                        }
-                    }
-                    JoinPoints(currentRoom.center, dungeon.Path[i], ref tiles);
-                    // JoinRoomsToCluster(dungeon, i, currentRoom, ref tiles);
-                }
-                if (i < dungeon.Rooms.Length - 1)
-                {
-                    JoinPoints(dungeon.Path[i + 1], dungeon.Path[i], ref tiles);
-                }
-            }
-
-
-            Vector2 offset = new Vector2(-dungeon.Width / 2, -dungeon.Height / 2);
-            // instantiate point gameobjects for debugging
-            for (int i = 0; i < dungeon.Path.Length; i++)
-            {
-                GameObject point = new GameObject("Path node: " + i);
-                point.transform.position = dungeon.Path[i] + offset;
-            }
-
-            // Tiles for paths
-            Color debugColor = Color.HSVToRGB(0.0f, 1.0f, 1.0f);
-            for (int i = 0; i < dungeon.Rooms.Length; i++)
-            {
-                debugColor = Color.HSVToRGB((float)i / dungeon.Rooms.Length, 1, 1);
-                var cluster = dungeon.Rooms[i];
-                for (int j = 1; j < cluster.Length; j++)
-                {
-                    // draw line from room i to room i-1
-                    Debug.DrawLine(cluster[j - 1].center + offset, cluster[j].center + offset, debugColor, 100);
-                }
-                if (i < dungeon.Rooms.Length - 1)
-                    Debug.DrawLine(dungeon.Path[i] + offset, dungeon.Path[i + 1] + offset, Color.white, 100);
-            }
-        }
-
-        private void JoinPoints(Vector2 room, Vector2 node, ref EDungeonTile[,] tiles)
-        {
-            int x, y;
-            int start, finish;
-            bool up, right;
-
-            up = node.y > room.y;
-            right = node.x > room.x;
-
-            start = (int)Mathf.Min(room.y, node.y);
-            finish = (int)Mathf.Max(room.y, node.y);
-            x = (int)room.x;
-            // do coridor to path node
-            for (y = start; y <= finish; y++)
-            {
-                tiles[x, y] = EDungeonTile.Floor;
-            }
-
-            start = (int)Mathf.Min(room.x, node.x);
-            finish = (int)Mathf.Max(room.x, node.x);
-            y = (int)node.y;
-            for (x = start; x <= finish; x++)
-            {
-                tiles[x, y] = EDungeonTile.Floor;
-            }
-        }
-
-        internal EDungeonTile[,] MakeEmptyTileMap(DungeonData dungeon)
-        {
-            EDungeonTile[,] tiles = new EDungeonTile[dungeon.Width, dungeon.Height];
-            for (int y = 0; y < dungeon.Height; y++)
-            {
-                for (int x = 0; x < dungeon.Width; x++)
-                {
-                    tiles[x, y] = EDungeonTile.Wall;
-                }
-            }
-
-            return tiles;
-        }
-
-        private int Compare(Vector2 x, Vector2 y)
-        {
-            return (int)Vector2.Distance(x, y);
         }
 
         // Update is called once per frame
