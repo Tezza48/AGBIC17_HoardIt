@@ -19,7 +19,7 @@ namespace HoardIt
         [Header("Prefabs")]
         public GameObject Prefab_WallTile;
         public GameObject Prefab_FloorTile;
-        public GameObject Prefab_Exit;
+        public GameObject Prefab_DownStairs;
 
         public TextMesh Prefab_TextMesh;
 
@@ -42,7 +42,7 @@ namespace HoardIt
         private void GenerateDungeon()
         {
             GenerateDungeonData(m_DungeonSize, m_MinRoomSize, m_MaxRoomSize, m_MaxRoomCount, out m_RawDungeonData);
-            InstantiateDungeon(m_RawDungeonData);
+            InstantiateDungeon();
         }
 
         private void GenerateDungeonData(int size, int minRoomSize, int maxRoomSize, int roomCount, out RawDungeonData dungeon)
@@ -52,6 +52,16 @@ namespace HoardIt
             m_RawDungeonData.GenerateRoomsData(minRoomSize, maxRoomSize, roomCount);
 
             m_RawDungeonData.GenerateAndSortClusters(m_PathNodeCount, m_MaxRoomSize);
+        }
+
+        private void InstantiateDungeon()
+        {
+            PopulateDungeon(ref m_RawDungeonData);
+
+            m_DungeonData.ParseDungeonData(m_RawDungeonData);
+
+            InstantiateTiles(m_DungeonData.Tiles, m_RawDungeonData.Width, m_RawDungeonData.Height);
+
         }
 
         private void GenerateAndSortClusters(Rect[] rooms, ref RawDungeonData dungeon)
@@ -116,16 +126,6 @@ namespace HoardIt
             dungeon.Exit = new int[2] { numRooms - 1, dungeon.Rooms[numRooms - 1].Length - 1 };
         }
 
-        private void InstantiateDungeon(RawDungeonData dungeon)
-        {
-            m_DungeonData.ParseDungeonData(dungeon);
-
-            PopulateDungeon(ref m_RawDungeonData);
-
-            InstantiateTiles(m_DungeonData.Tiles, dungeon.Width, dungeon.Height);
-
-        }
-
         private void PopulateDungeon(ref RawDungeonData dungeon)
         {
             Player.transform.position = dungeon.Rooms[dungeon.Entrance[0]][dungeon.Entrance[1]].center + dungeon.GetWorldOffset();
@@ -152,6 +152,9 @@ namespace HoardIt
                             break;
                         case EDungeonTile.Wall:
                             m_SpawnedTiles.Add(Instantiate(Prefab_WallTile));
+                            break;
+                        case EDungeonTile.DownStairs:
+                            m_SpawnedTiles.Add(Instantiate(Prefab_DownStairs));
                             break;
                         default:
                             break;

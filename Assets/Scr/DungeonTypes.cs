@@ -6,7 +6,7 @@ namespace HoardIt.Dungeon
 {
     public enum EDungeonTile
     {
-        Undefined = -1, Air, Floor, Wall
+        Undefined = -1, Air, Floor, Wall, DownStairs
     }
 
     public struct DungeonPopulation
@@ -136,6 +136,11 @@ namespace HoardIt.Dungeon
             return new Vector2(-m_Width / 2, -m_Height / 2);
         }
 
+        public Vector2 GetExitPosition()
+        {
+            return m_Rooms[m_Exit[0]][m_Exit[1]].center;
+        }
+
         public override string ToString()
         {
             return "Width: " + m_Width.ToString() + " Height: " + m_Height.ToString() + "Rooms: " + Rooms.Length;
@@ -151,6 +156,7 @@ namespace HoardIt.Dungeon
         // Fill out a TileDungeon using RawDungeon data
         public void ParseDungeonData(RawDungeonData rawDungeon)
         {
+
             m_Tiles = MakeEmptyTileMap(rawDungeon);
 
             // Tiles for Rooms
@@ -184,18 +190,13 @@ namespace HoardIt.Dungeon
                 }
             }
 
-            // instantiate point gameobjects for debugging
-            for (int i = 0; i < rawDungeon.Path.Length; i++)
-            {
-                GameObject point = new GameObject("Path node: " + i);
-                point.transform.position = rawDungeon.Path[i] + rawDungeon.GetWorldOffset();
-            }
+            m_Tiles[(int)rawDungeon.GetExitPosition().x, (int)rawDungeon.GetExitPosition().y] = EDungeonTile.DownStairs;
 
+#if Debug
             // Tiles for paths
             for (int i = 0; i < rawDungeon.Rooms.Length; i++)
             {
                 var cluster = rawDungeon.Rooms[i];
-#if Debug
                 Color debugColor = Color.HSVToRGB((float)i / rawDungeon.Rooms.Length, 1, 1);
                 for (int j = 1; j < cluster.Length; j++)
                     Debug.DrawLine(cluster[j - 1].center + rawDungeon.GetWorldOffset(),
@@ -206,8 +207,8 @@ namespace HoardIt.Dungeon
                     Debug.DrawLine(rawDungeon.Path[i] + rawDungeon.GetWorldOffset(),
                         rawDungeon.Path[i + 1] + rawDungeon.GetWorldOffset(),
                         Color.white, 100);
-#endif
             }
+#endif
         }
 
         private EDungeonTile[,] MakeEmptyTileMap(RawDungeonData dungeon)
@@ -229,10 +230,6 @@ namespace HoardIt.Dungeon
         {
             int x, y;
             int start, finish;
-            bool up, right;
-
-            up = node.y > room.y;
-            right = node.x > room.x;
 
             start = (int)Mathf.Min(room.y, node.y);
             finish = (int)Mathf.Max(room.y, node.y);
