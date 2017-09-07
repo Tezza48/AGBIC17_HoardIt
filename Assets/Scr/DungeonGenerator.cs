@@ -15,16 +15,15 @@ namespace HoardIt
     public struct DungeonData
     {
         int m_Width, m_Height;
-        int m_Entrance, m_Exit;
+        int[] m_Entrance, m_Exit;
         Rect[][] m_Rooms;
         Vector2[] m_Path;
 
         public int Width { get { return m_Width; } set { m_Width = value; } }
         public int Height { get { return m_Height; } set { m_Height = value; } }
-        public int Entrance { get { return m_Entrance; } set { m_Entrance = value; } }
-        public int Exit { get { return m_Exit; } set { m_Exit = value; } }
-
-        public Rect[] RoomsUnclustered { get { return m_Rooms[0]; } set { m_Rooms[0] = value; } }
+        public int[] Entrance { get { return m_Entrance; } set { m_Entrance = value; } }
+        public int[] Exit { get { return m_Exit; } set { m_Exit = value; } }
+        
         public Rect[][] Rooms { get { return m_Rooms; } set { m_Rooms = value; } }
         public Vector2[] Path { get { return m_Path; } set { m_Path = value; } }
 
@@ -45,6 +44,9 @@ namespace HoardIt
         [Header("Prefabs")]
         public GameObject Prefab_WallTile;
         public GameObject Prefab_FloorTile;
+        public GameObject Prefab_Exit;
+
+        public TextMesh Prefab_TextMesh;
 
         [Header("Scene Referances")]
         public GameObject Player;
@@ -74,13 +76,9 @@ namespace HoardIt
                 Width = size,
                 Height = size
             };
-
-            // generate room
-            // check against other rooms so see if colliding
-            // repeat till max reached or out of trys
+            
             Rect[] rooms = GenerateRoomsData(size, minRoomSize, maxRoomSize, roomCount);
 
-            // Generate path
             GenerateAndSortClusters(rooms, ref dungeon);
         }
 
@@ -94,11 +92,9 @@ namespace HoardIt
             {
                 Vector2 roomSize = new Vector2(Random.Range(minRoomSize, maxRoomSize) + 2, Random.Range(minRoomSize, maxRoomSize) + 2);
 
-                Vector2 roomPosition = new Vector2(
+                tryRoom = new Rect(roomSize, new Vector2(
                     (int)Random.Range(1, size - 2 - roomSize.x),
-                    (int)Random.Range(1, size - 2 - roomSize.y));
-
-                tryRoom = new Rect(roomPosition, roomSize);
+                    (int)Random.Range(1, size - 2 - roomSize.y)));
 
                 bool failed = false;
 
@@ -111,16 +107,21 @@ namespace HoardIt
                     }
                 }
                 if (failed)
-                {
                     trys++;
-                }
                 else
                 {
                     rooms.Add(tryRoom);
                     trys = 0;
                 }
             }
-
+#if Debug
+            foreach (var room in rooms)
+            {
+                var text = Instantiate(Prefab_TextMesh, room.center + new Vector2(-size / 2, -size / 2), Quaternion.identity);
+                text.transform.position += Vector3.back;
+                text.text = "Room" + rooms.Count;
+            }
+#endif
             return rooms.ToArray();
         }
 
@@ -182,6 +183,9 @@ namespace HoardIt
             // link rooms in a node (sort rooms according to clusters)
             // Link clusters together (pace one cluster of rooms after the preveous
             dungeon.Rooms = sortedRects;
+            dungeon.Entrance = new int[2] { 0, 0};
+            int numRooms = dungeon.Rooms.Length;
+            dungeon.Exit = new int[2] { numRooms - 1, dungeon.Rooms[numRooms - 1].Length - 1 };
         }
 
         private void InstantiateDungeon(DungeonData dungeon)
@@ -260,11 +264,12 @@ namespace HoardIt
                             }
                         }
                     }
-                    JoinRoomsToCluster(dungeon, i, currentRoom, ref tiles);
+                    JoinPoints(currentRoom.center, dungeon.Path[i], ref tiles);
+                    // JoinRoomsToCluster(dungeon, i, currentRoom, ref tiles);
                 }
                 if (i < dungeon.Rooms.Length - 1)
                 {
-                    JoinClusters(dungeon.Path[i + 1], dungeon.Path[i], ref tiles);
+                    JoinPoints(dungeon.Path[i + 1], dungeon.Path[i], ref tiles);
                 }
             }
 
@@ -293,78 +298,30 @@ namespace HoardIt
             }
         }
 
-        private void JoinClusters(Vector2 current, Vector2 prev, ref EDungeonTile[,] tiles)
-        {
-
-            int x, y;
-            int start, finish;
-
-            start = (int)Mathf.Min(current.y, prev.y);
-            finish = (int)Mathf.Max(current.y, prev.y);
-            x = (int)(current.x < prev.x ? current.x : prev.x);
-            // do coridor to path node
-            for (y = start; y < finish; y++)
-            {
-                tiles[x, y] = EDungeonTile.Floor;
-            }
-
-            start = (int)Mathf.Min(current.x, prev.x);
-            finish = (int)Mathf.Max(current.x, prev.x);
-            y = (int)(current.y > prev.x ? current.y : prev.y);
-            for (x = start; x < finish; x++)
-            {
-                tiles[x, y] = EDungeonTile.Floor;
-            }
-        }
-
-        private void JoinRoomsToCluster(DungeonData dungeon, int i, Rect currentRoom, ref EDungeonTile[,] tiles)
+        private void JoinPoints(Vector2 room, Vector2 node, ref EDungeonTile[,] tiles)
         {
             int x, y;
             int start, finish;
+            bool up, right;
 
-            start = (int)Mathf.Min(currentRoom.center.y, dungeon.Path[i].y);
-            finish = (int)Mathf.Max(currentRoom.center.y, dungeon.Path[i].y);
-            x = (int)(currentRoom.center.x < dungeon.Path[i].x ? currentRoom.center.x : dungeon.Path[i].x);
+            up = node.y > room.y;
+            right = node.x > room.x;
+
+            start = (int)Mathf.Min(room.y, node.y);
+            finish = (int)Mathf.Max(room.y, node.y);
+            x = (int)room.x;
             // do coridor to path node
-            for (y = start; y < finish; y++)
+            for (y = start; y <= finish; y++)
             {
-                //if (y == start)
-                //{
-                //    tiles[x + 1, y - 1] = tiles[x + 1, y - 1] != EDungeonTile.Floor ? EDungeonTile.Wall : tiles[x + 1, y - 1];
-                //    tiles[x, y - 1] = tiles[x, y - 1] != EDungeonTile.Floor ? EDungeonTile.Wall : tiles[x, y - 1];
-                //    tiles[x - 1, y - 1] = tiles[x - 1, y - 1] != EDungeonTile.Floor ? EDungeonTile.Wall : tiles[x - 1, y - 1];
-                //}
-                //tiles[x + 1, y] = tiles[x + 1, y] != EDungeonTile.Floor ? EDungeonTile.Wall : tiles[x + 1, y];
                 tiles[x, y] = EDungeonTile.Floor;
-                //tiles[x - 1, y] = tiles[x - 1, y] != EDungeonTile.Floor ? EDungeonTile.Wall : tiles[x - 1, y];
-                //if (y == finish)
-                //{
-                //    tiles[x + 1, y + 1] = tiles[x + 1, y + 1] != EDungeonTile.Floor ? EDungeonTile.Wall : tiles[x + 1, y + 1];
-                //    tiles[x, y + 1] = tiles[x, y + 1] != EDungeonTile.Floor ? EDungeonTile.Wall : tiles[x, y + 1];
-                //    tiles[x - 1, y + 1] = tiles[x - 1, y + 1] != EDungeonTile.Floor ? EDungeonTile.Wall : tiles[x - 1, y + 1];
-                //}
             }
 
-            start = (int)Mathf.Min(currentRoom.center.x, dungeon.Path[i].x);
-            finish = (int)Mathf.Max(currentRoom.center.x, dungeon.Path[i].x);
-            y = (int)(currentRoom.center.y < dungeon.Path[i].y ? currentRoom.center.y : dungeon.Path[i].y);
-            for (x = start; x < finish; x++)
+            start = (int)Mathf.Min(room.x, node.x);
+            finish = (int)Mathf.Max(room.x, node.x);
+            y = (int)node.y;
+            for (x = start; x <= finish; x++)
             {
-                //if (x == start)
-                //{
-                //    tiles[x - 1, y + 1] = tiles[x - 1, y + 1] != EDungeonTile.Floor ? EDungeonTile.Wall : tiles[x - 1, y + 1];
-                //    tiles[x - 1, y] = tiles[x - 1, y] != EDungeonTile.Floor ? EDungeonTile.Wall : tiles[x - 1, y];
-                //    tiles[x - 1, y - 1] = tiles[x - 1, y - 1] != EDungeonTile.Floor ? EDungeonTile.Wall : tiles[x - 1, y - 1];
-                //}
-                //tiles[x, y + 1] = tiles[x, y + 1] != EDungeonTile.Floor ? EDungeonTile.Wall : tiles[x, y + 1];
                 tiles[x, y] = EDungeonTile.Floor;
-                //tiles[x, y - 1] = tiles[x, y - 1] != EDungeonTile.Floor ? EDungeonTile.Wall : tiles[x, y - 1];
-                //if (x == finish)
-                //{
-                //    tiles[x + 1, y + 1] = tiles[x + 1, y + 1] != EDungeonTile.Floor ? EDungeonTile.Wall : tiles[x + 1, y + 1];
-                //    tiles[x + 1, y] = tiles[x + 1, y] != EDungeonTile.Floor ? EDungeonTile.Wall : tiles[x + 1, y];
-                //    tiles[x + 1, y - 1] = tiles[x + 1, y - 1] != EDungeonTile.Floor ? EDungeonTile.Wall : tiles[x + 1, y - 1];
-                //}
             }
         }
 
