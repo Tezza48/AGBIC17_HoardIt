@@ -2,15 +2,21 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Interactable : MonoBehaviour {
+namespace HoardIt.Assets
+{
+    public abstract class Interactable : MonoBehaviour
+    {
+        protected abstract void OnHover(PlayerControl player);
+        protected abstract void OnInteract();
 
-	// Use this for initialization
-	void Start () {
+	    // Use this for initialization
+	    void Start () {
 		
-	}
+	    }
 	
-	// Update is called once per frame
-	void Update () {
+	    // Update is called once per frame
+	    void Update () {
 		
-	}
+	    }
+}
 }
