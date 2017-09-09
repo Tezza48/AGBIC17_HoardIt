@@ -44,15 +44,20 @@ namespace HoardIt.Assets
 	    // Update is called once per frame
 	    void Update ()
         {
-            isInvAccessable = true;
-            if (Input.getButtonDown(m_PlayerIndex, 1))
+            bool isBPressed = Input.getButtonDown(m_PlayerIndex, 1);
+            if (isBPressed)
             {
-                m_InInventory = !m_InInventory;
+                m_InInventory = (isInvAccessable && !m_InInventory) ? true : false;
             }
 
             Ref_InventoryPanel.SetActive(m_InInventory);
 
 	    }
+
+        private void LateUpdate()
+        {
+            isInvAccessable = true;
+        }
 
         void FixedUpdate()
         {

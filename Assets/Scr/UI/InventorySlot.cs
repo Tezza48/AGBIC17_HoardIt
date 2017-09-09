@@ -8,15 +8,23 @@ using UnityEngine.EventSystems;
 
 namespace HoardIt.UI
 {
-    class InventorySlot : Selectable
+    public class InventorySlot : Selectable
     {
         public int m_X, m_Y;
-        public Inventory Ref_Inventory;
+        public InventoryUI Ref_InventoryUI;
 
         public override void OnSelect(BaseEventData eventData)
         {
             base.OnSelect(eventData);
-            Ref_Inventory.OnSelect(m_X, m_Y);
+            Ref_InventoryUI.OnSelect(m_X, m_Y);
+
+        }
+
+        public void Init(InventoryUI inv, int x, int y)
+        {
+            Ref_InventoryUI = inv;
+            m_X = x;
+            m_Y = y;
         }
     }
 }

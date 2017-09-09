@@ -4,10 +4,10 @@ using UnityEngine;
 
 namespace HoardIt.Assets
 {
-    public abstract class Interactable : MonoBehaviour
+    public class Interactable : MonoBehaviour
     {
-        protected abstract void OnHover(PlayerControl player);
-        protected abstract void OnInteract();
+        protected virtual void OnHover(PlayerControl player) { }
+        protected virtual void OnInteract() { }
 
 	    // Use this for initialization
 	    void Start () {

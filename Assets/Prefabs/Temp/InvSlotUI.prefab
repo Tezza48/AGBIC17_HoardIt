@@ -23,7 +23,7 @@ GameObject:
   - component: {fileID: 114036548995635064}
   - component: {fileID: 114551605561387258}
   m_Layer: 0
-  m_Name: InvSlotButton
+  m_Name: InvSlotUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -94,7 +94,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 114036548995635064}
   m_X: 0
   m_Y: 0
-  Ref_Inventory: {fileID: 0}
+  Ref_InventoryUI: {fileID: 0}
 --- !u!222 &222114448896389484
 CanvasRenderer:
   m_ObjectHideFlags: 1
@@ -117,5 +117,5 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: 80, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
