@@ -24,7 +24,7 @@ namespace HoardIt.Assets
 
         public Sprite Sprite { get { return m_Sprite; } set { m_Sprite = value; } }
 
-        public Rect Bounds { get { return m_Shape; } set { m_Shape = value; } }
+        public Rect Position { get { return m_Shape; } set { m_Shape = value; } }
 
         public string Name { get { return m_Name; } set { m_Name = value; } }
 

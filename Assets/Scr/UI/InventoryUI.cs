@@ -89,8 +89,8 @@ namespace HoardIt.UI
                 newImage.rectTransform.pivot = Vector2.zero;
                 newImage.rectTransform.anchorMin = Vector2.zero;
                 newImage.rectTransform.anchorMax = Vector2.zero;
-                newImage.rectTransform.localPosition = item.Bounds.position * 90 + m_InventorySlotBounds.position;
-                newImage.rectTransform.sizeDelta = item.Bounds.max * 90;
+                newImage.rectTransform.localPosition = item.Position.position * 90 + m_InventorySlotBounds.position;
+                newImage.rectTransform.sizeDelta = item.Position.max * 90;
                 newImage.name = item.Name + " Display";
                 newImage.sprite = item.Sprite;
                 newImage.raycastTarget = false;
@@ -103,7 +103,7 @@ namespace HoardIt.UI
             {
                 item.m_Shape.xMax *= Screen.width / 6;
                 item.m_Shape.yMax *= Screen.height/5;
-                GUI.DrawTextureWithTexCoords(item.Bounds, item.Sprite.texture, item.Sprite.textureRect);
+                GUI.DrawTextureWithTexCoords(item.Position, item.Sprite.texture, item.Sprite.textureRect);
             }
         }
     }
