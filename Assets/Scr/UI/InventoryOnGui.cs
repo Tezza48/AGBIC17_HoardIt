@@ -30,7 +30,7 @@ namespace HoardIt.UI
                 position.x *= m_GuiScale;
                 position.y = (Screen.height - item.Position.y * m_GuiScale) - (item.Position.height * m_GuiScale);
                 position.width *= m_GuiScale;
-                position.yMax *= m_GuiScale;
+                position.height *= m_GuiScale;
 
                 Rect coords = item.Sprite.rect;
                 float xPos = coords.x / item.Sprite.texture.width;

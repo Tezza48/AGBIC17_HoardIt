@@ -1,10 +1,11 @@
 fileFormatVersion: 2
 guid: a038d0b35508f704faa51f0c5bdcc773
-timeCreated: 1504992839
+timeCreated: 1505255054
 licenseType: Free
 TextureImporter:
   fileIDToRecycleName:
     21300000: Inventory_Slot
+    21300002: xhair
   serializedVersion: 4
   mipmaps:
     mipMapMode: 0
@@ -48,7 +49,7 @@ TextureImporter:
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spritePixelsToUnits: 16
   alphaUsage: 1
-  alphaIsTransparency: 0
+  alphaIsTransparency: 1
   spriteTessellationDetail: -1
   textureType: 8
   textureShape: 1
@@ -108,6 +109,20 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 6
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: xhair
+      rect:
+        serializedVersion: 2
+        x: 5
+        y: 488
+        width: 5
+        height: 5
+      alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
