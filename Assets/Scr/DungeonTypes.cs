@@ -1,4 +1,4 @@
-﻿#define Debug
+﻿//#define Debug
 using UnityEngine;
 using System.Collections.Generic;
 using HoardIt;
