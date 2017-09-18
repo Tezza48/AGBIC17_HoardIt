@@ -1,7 +1,10 @@
 ﻿//#define Debug
 using UnityEngine;
+using Random = UnityEngine.Random;
 using System.Collections.Generic;
-using HoardIt;
+using HoardIt.Assets;
+using HoardIt.Core;
+using System;
 
 namespace HoardIt.Dungeon
 {
@@ -10,17 +13,40 @@ namespace HoardIt.Dungeon
         Undefined = -1, Air, Floor, Wall, DownStairs
     }
 
-    public struct DungeonPopulation
+    public class DungeonPopulation
     {
+        private Item[] m_Items;
+        private Point[] m_TargetRooms;
+        private int m_NumItems;
+
+        public DungeonPopulation(Item[] items, Point[] targetRooms)
+        {
+            Items = items;
+            TargetRooms = targetRooms;
+            m_NumItems = m_Items.Length;
+        }
+
+        public Item[] Items { get { return m_Items; } set { m_Items = value; } }
+
+        public Point[] TargetRooms { get { return m_TargetRooms; } set { m_TargetRooms = value; } }
+
+        public int NumItems { get { return m_NumItems; } set { m_NumItems = value; } }
+        // Traps (though maybe this should be within a Room struct, replacing Rect)
 
     }
     
-    public struct RawDungeonData
+    public class RawDungeonData
     {
         int m_Width, m_Height;
         int[] m_Entrance, m_Exit;
         Rect[][] m_Rooms;// array of sets of rooms close to each other/"clusters"
         Vector2[] m_Path;
+        DungeonPopulation m_DungeonPopulation;
+
+        public RawDungeonData()
+        {
+
+        }
 
         public int Width { get { return m_Width; } set { m_Width = value; } }
         public int Height { get { return m_Height; } set { m_Height = value; } }
@@ -29,6 +55,8 @@ namespace HoardIt.Dungeon
 
         public Rect[][] Rooms { get { return m_Rooms; } set { m_Rooms = value; } }
         public Vector2[] Path { get { return m_Path; } set { m_Path = value; } }
+
+        public DungeonPopulation DungeonPopulation { get { return m_DungeonPopulation; } set { m_DungeonPopulation = value; } }
 
         public void GenerateRoomsData(int minRoomSize, int maxRoomSize, int roomCount)
         {
@@ -66,6 +94,11 @@ namespace HoardIt.Dungeon
             //place all rooms into the first element of Rooms for using later
             m_Rooms = new Rect[1][];
             m_Rooms[0] = rooms.ToArray();
+        }
+
+        public DungeonPopulation GetPopulation()
+        {
+            return m_DungeonPopulation;
         }
 
         public void GenerateAndSortClusters(int pathLength, int maxRoomSize)

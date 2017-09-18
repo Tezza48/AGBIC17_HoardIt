@@ -3,48 +3,37 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
+using HoardIt.Core;
 
 namespace HoardIt.Assets
 {
     [Serializable]
     public class Item
     {
-        public enum EItem
-        {
-            Dagger, Sword, Bow, Star
-        }
         [SerializeField]
         private string m_Name;
         [SerializeField]
-        private EItem m_Type;
+        private EItemBaseType m_Type;
         [SerializeField]
         public Rect m_Shape;
         [SerializeField]
         private Sprite m_Sprite;
 
+        public string Name { get { return m_Name; } set { m_Name = value; } }
+
+        public EItemBaseType Type { get { return m_Type; } }
+
         public Sprite Sprite { get { return m_Sprite; } set { m_Sprite = value; } }
 
         public Rect Position { get { return m_Shape; } set { m_Shape = value; } }
-
-        public string Name { get { return m_Name; } set { m_Name = value; } }
-
-        public Item()
+        
+        public Item(string name, EItemBaseType type, Point size, Sprite sprite)
         {
-
+            m_Name = name;
+            m_Type = type;
+            m_Shape = new Rect(Vector2.zero, (Vector2)size);
+            m_Sprite = sprite;
         }
     }
 
-    public class ItemEntity : Interactable
-    {
-
-        protected override void OnHover(PlayerControl player)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override void OnInteract()
-        {
-            throw new NotImplementedException();
-        }
-    }
 }

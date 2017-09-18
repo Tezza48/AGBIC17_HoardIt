@@ -5,6 +5,7 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 using HoardIt.Core;
 using HoardIt.Dungeon;
+using HoardIt.Assets;
 
 namespace HoardIt
 {
@@ -15,6 +16,10 @@ namespace HoardIt
         public int m_MinRoomSize = 2, m_MaxRoomSize = 6;
         public int m_MaxRoomCount = 4;
         public int m_PathNodeCount = 5;
+        [Range(0, 10)]
+        public int m_MinItemTarget = 3;
+        [Range(5, 20)]
+        public int m_MaxItemTarget = 7;
 
         [Header("Prefabs")]
         public GameObject Prefab_WallTile;
@@ -62,6 +67,25 @@ namespace HoardIt
 
             InstantiateTiles(m_DungeonData.Tiles, m_RawDungeonData.Width, m_RawDungeonData.Height);
 
+            InstantiatePopulation(m_RawDungeonData.GetPopulation());
+        }
+
+        private void InstantiatePopulation(DungeonPopulation population)
+        {
+            for (int i = 0; i < population.NumItems; i++)
+            {
+                var newObj = new GameObject();
+
+                ItemEntity entity = newObj.AddComponent<ItemEntity>();
+
+                entity.Init(population.Items[i]);
+
+                // set it's position
+                Rect roomPos = m_RawDungeonData.Rooms[population.TargetRooms[i].X][population.TargetRooms[i].Y];
+                roomPos.position += m_RawDungeonData.GetWorldOffset();
+                Vector2 position = new Vector2(Random.Range(roomPos.xMin + 0.5f, roomPos.xMax + 0.5f), Random.Range(roomPos.yMin + 0.5f, roomPos.yMax + 0.5f));
+                entity.transform.position = position;
+            }
         }
 
         private void GenerateAndSortClusters(Rect[] rooms, ref RawDungeonData dungeon)
@@ -129,6 +153,33 @@ namespace HoardIt
         private void PopulateDungeon(ref RawDungeonData dungeon)
         {
             Player.transform.position = dungeon.Rooms[dungeon.Entrance[0]][dungeon.Entrance[1]].center + dungeon.GetWorldOffset();
+            GenerateLoot(ref dungeon);
+        }
+
+        private void GenerateLoot(ref RawDungeonData dungeon)
+        {
+            List<Item> items = new List<Item>();
+            List<Point> targetRooms = new List<Point>();
+
+            int numItemsToSpawn = Random.Range(m_MinItemTarget, m_MaxItemTarget + 1);
+            int numTypes = ItemBase.singleton.baseTypes.Length;
+            for (int i = 0; i < numItemsToSpawn; i++)
+            {
+                TypeSizeSprite link = ItemBase.singleton.baseTypes[
+                    Random.Range(0, numTypes)];
+
+                // name is by default the string version of the type name
+                Item newItem = new Item(link.m_Type.ToString(), link.m_Type, link.m_Size, link.m_Sprite);
+                
+                // Pick the room for it to go in
+                int cluster = Random.Range(0, dungeon.Rooms.Length);
+                int room = Random.Range(0, dungeon.Rooms[cluster].Length);
+
+                items.Add(newItem);
+                targetRooms.Add(new Point(cluster, room));
+            }
+
+            dungeon.DungeonPopulation = new DungeonPopulation(items.ToArray(), targetRooms.ToArray());
         }
 
         // Instantiate all tiles in a TileDungeon
